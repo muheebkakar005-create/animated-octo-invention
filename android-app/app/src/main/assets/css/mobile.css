@@ -1,0 +1,356 @@
+/* ==========================================================================
+   MOBILE-FIRST SPECIALIZED LAYOUT & AUTO-SEARCH SUGGESTIONS
+   ========================================================================== */
+
+/* ==========================================================================
+   FIXED BOTTOM NAVIGATION (Native Mobile Feel)
+   ========================================================================== */
+.bottom-nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--bottom-nav-height);
+    background: var(--bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+    box-shadow: 0 -3px 18px rgba(0, 0, 0, 0.08);
+    border-top: 1px solid var(--border-color);
+    z-index: 1000;
+    user-select: none;
+    transition: background 0.3s, border 0.3s;
+}
+
+body.dark-mode .bottom-nav-bar {
+    background: #171412;
+    border-top: 1px solid #382E27;
+    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.6);
+}
+
+.nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    gap: 3px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border-radius: var(--radius-sm);
+    padding: 4px 0;
+}
+
+.nav-icon {
+    font-size: 19px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-item.active {
+    color: var(--primary);
+    font-weight: 900;
+}
+
+body.dark-mode .nav-item.active {
+    color: #D4AF37;
+}
+
+.nav-item.active .nav-icon {
+    transform: translateY(-2px) scale(1.18);
+}
+
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 18px;
+    height: 3px;
+    background: var(--primary);
+    border-radius: 4px;
+}
+
+body.dark-mode .nav-item.active::after {
+    background: #D4AF37;
+}
+
+/* ==========================================================================
+   AUTO-SEARCH INSTANT SUGGESTION POPUP & LIST (Starts-With Prioritization)
+   ========================================================================== */
+.search-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.auto-search-results-box {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--bg-surface);
+    border: 1.5px solid var(--primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--card-shadow);
+    z-index: 500;
+    -webkit-overflow-scrolling: touch;
+}
+
+body.dark-mode .auto-search-results-box {
+    background: #1F1915;
+    border-color: #D4AF37;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+.auto-search-results-box.open {
+    display: block;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.search-result-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover, .search-result-item:active {
+    background: var(--primary-light);
+}
+
+body.dark-mode .search-result-item:hover, body.dark-mode .search-result-item:active {
+    background: #2E241D;
+}
+
+.search-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-item-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.search-item-name mark {
+    background: #FDE047;
+    color: #171412;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 900;
+}
+
+body.dark-mode .search-item-name mark {
+    background: #D4AF37;
+    color: #0C0A09;
+}
+
+.search-item-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+    align-items: center;
+}
+
+.search-item-price {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--primary);
+    text-align: right;
+    margin-left: 8px;
+    white-space: nowrap;
+}
+
+body.dark-mode .search-item-price {
+    color: #D4AF37;
+}
+
+/* ==========================================================================
+   TABLE RESPONSIVENESS (Card Switch for Mobile)
+   ========================================================================== */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.data-table th, .data-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    text-align: left;
+    vertical-align: middle;
+}
+
+.data-table th {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    font-weight: 800;
+    font-size: 10px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   MOBILE BOTTOM SHEET / MODAL SYSTEM
+   ========================================================================== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--modal-backdrop);
+    z-index: 2000;
+    align-items: flex-end;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-surface);
+    width: 100%;
+    max-width: 520px;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid var(--border-color);
+}
+
+@media (min-width: 640px) {
+    .modal-overlay {
+        align-items: center;
+        padding: 20px;
+    }
+    .modal-content {
+        border-radius: var(--radius-lg);
+        max-height: 85vh;
+        animation: scaleIn 0.2s ease-out;
+    }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.modal-close-btn {
+    background: var(--bg-subtle);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-muted);
+}
+
+.modal-body {
+    padding: 16px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 8px;
+}
+
+/* Floating Cart Summary Pill on Mobile */
+.mobile-cart-float-bar {
+    display: none;
+    position: fixed;
+    bottom: calc(var(--bottom-nav-height) + 8px);
+    left: 10px;
+    right: 10px;
+    background: var(--text-primary);
+    color: var(--bg-main);
+    border-radius: var(--radius-lg);
+    padding: 10px 16px;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    z-index: 900;
+    cursor: pointer;
+    animation: fadeIn 0.2s ease;
+}
+
+body.dark-mode .mobile-cart-float-bar {
+    background: #D4AF37;
+    color: #12100E;
+    font-weight: 900;
+}
+
+@media (max-width: 899px) {
+    .mobile-cart-float-bar.has-items {
+        display: flex;
+    }
+}

@@ -1,0 +1,125 @@
+/* ==========================================================================
+   RECEIPT & THERMAL PRINTER STYLESHEET (58mm / 80mm / A4)
+   ========================================================================== */
+
+.receipt-wrapper {
+    background: #ffffff;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto;
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    font-family: 'Courier New', Courier, monospace, monospace;
+    color: #000000;
+}
+
+.receipt-header {
+    text-align: center;
+    border-bottom: 2px dashed #000;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.receipt-header h2 {
+    font-size: 18px;
+    font-weight: 900;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.receipt-header p {
+    font-size: 11px;
+    margin: 1px 0;
+    color: #222;
+}
+
+.receipt-meta-grid {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 11px;
+}
+
+.receipt-table th {
+    border-bottom: 1px solid #000;
+    padding: 4px 0;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.receipt-table td {
+    padding: 4px 0;
+    border-bottom: 1px dashed #ddd;
+}
+
+.receipt-summary {
+    border-top: 2px solid #000;
+    padding-top: 6px;
+    font-size: 12px;
+}
+
+.receipt-summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3px;
+}
+
+.receipt-grand-total {
+    font-size: 15px;
+    font-weight: 900;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid #000;
+}
+
+.receipt-footer {
+    text-align: center;
+    font-size: 10px;
+    color: #333;
+    margin-top: 12px;
+    border-top: 1px dashed #777;
+    padding-top: 8px;
+}
+
+/* ==========================================================================
+   PRINT MEDIA QUERY (Thermal 58mm / 80mm & A4 POS Bill)
+   ========================================================================== */
+@media print {
+    body * {
+        visibility: hidden !important;
+    }
+
+    #invoicePrintView, #invoicePrintView * {
+        visibility: visible !important;
+    }
+
+    #invoicePrintView {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        display: block !important;
+    }
+
+    .receipt-wrapper {
+        max-width: 100% !important;
+        border: none !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}

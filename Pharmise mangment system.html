@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#3F4D3A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="AHSAN Pharmacy POS - Premium Mobile Pharmacy & General Store POS">
+    <title>AHSAN Pharmacy POS</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/print.css">
+</head>
+<body>
+
+    <!-- ============================================================ -->
+    <!-- TOP APP HEADER (2-Tier Mobile App Bar) -->
+    <!-- ============================================================ -->
+    <header class="app-header">
+        <!-- Tier 1: Main Brand Bar -->
+        <div class="header-main-bar">
+            <div class="header-brand">
+                <div class="header-logo-badge">
+                    <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/>
+                    </svg>
+                </div>
+                <div class="header-brand-info">
+                    <h1>AHSAN PHARMACY</h1>
+                    <span class="header-store-sub">POS & Inventory Suite</span>
+                </div>
+            </div>
+            
+            <div class="header-quick-actions">
+                <!-- Theme Toggle Button (Light Sage #D6C7AE / Night Obsidian #0B0908) -->
+                <button class="header-icon-pill theme-toggle-btn" id="themeToggleBtn" onclick="App.toggleTheme()" title="Switch Light / Night Theme">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                    <span>Night</span>
+                </button>
+                
+                <button class="header-icon-pill" onclick="SettingsManager.openLock()" title="Lock Screen">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tier 2: Status & Quick Utilities Bar -->
+        <div class="header-sub-bar">
+            <div class="header-status-badge">
+                <span class="status-pulse-dot"></span>
+                <span>100% Offline DB</span>
+            </div>
+            
+            <div class="header-utility-chips">
+                <button class="header-chip-btn" onclick="App.backupDatabase()" title="Backup Database">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    <span>Backup</span>
+                </button>
+                
+                <button class="header-chip-btn" onclick="document.getElementById('dbRestoreInput').click()" title="Restore Database">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    <span>Restore</span>
+                </button>
+                
+                <input type="file" id="dbRestoreInput" accept=".json" style="display:none;" onchange="App.handleRestoreFile(event)">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-container">
+        <!-- Live Alerts Container (Expiring & Low Stock) -->
+        <div id="alertsContainer"></div>
+
+        <!-- ============================================================ -->
+        <!-- VIEW 1: DASHBOARD & METRICS -->
+        <!-- ============================================================ -->
+        <section id="view-dashboard" class="tab-view active">
+            <div class="metrics-scroll-grid">
+                <div class="metric-widget blue">
+                    <div class="metric-label">Total Gross Sales</div>
+                    <div class="metric-val" id="totalRevenue">Rs. 0.00</div>
+                    <div class="metric-sub">Lifetime Net Sales</div>
+                </div>
+                <div class="metric-widget green">
+                    <div class="metric-label">Total Net Profit</div>
+                    <div class="metric-val" id="actualProfit" style="color:var(--success);">Rs. 0.00</div>
+                    <div class="metric-sub" id="profitMarginText">Net Margin: 0%</div>
+                </div>
+                <div class="metric-widget amber">
+                    <div class="metric-label">Stock Retail Value</div>
+                    <div class="metric-val" id="totalStockWorth" style="color:var(--warning);">Rs. 0.00</div>
+                    <div class="metric-sub" id="totalStockCostText">Cost: Rs. 0.00</div>
+                </div>
+                <div class="metric-widget rose">
+                    <div class="metric-label">Stock Alerts</div>
+                    <div class="metric-val" id="stockAlertsCount" style="color:var(--danger);">0</div>
+                    <div class="metric-sub" id="expiredCountText">0 Expired / 0 Low</div>
+                </div>
+            </div>
+
+            <!-- Invoices Total Pill -->
+            <div class="ui-card" style="padding:10px 14px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-size:12px; font-weight:800; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    Invoices Created: <strong id="totalInvoices" style="color:var(--text-primary); margin-left:4px;">0</strong>
+                </div>
+                <div style="font-size:12px; color:var(--text-muted);" id="totalItemsSoldText">0 units sold</div>
+            </div>
+
+            <div class="form-row-2" style="grid-template-columns: 1fr;">
+                <div class="ui-card">
+                    <div class="card-title-row">
+                        <h3 style="display:flex; align-items:center; gap:6px;">
+                            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            Monthly Performance
+                        </h3>
+                        <button class="btn btn-secondary btn-sm" onclick="DashboardManager.exportPerformanceCSV('monthly')">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead><tr><th>Month</th><th>Revenue</th><th>Profit</th><th>Invoices</th></tr></thead>
+                            <tbody id="monthlyTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ui-card">
+                    <div class="card-title-row">
+                        <h3 style="display:flex; align-items:center; gap:6px;">
+                            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            Yearly Performance
+                        </h3>
+                        <button class="btn btn-secondary btn-sm" onclick="DashboardManager.exportPerformanceCSV('yearly')">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead><tr><th>Year</th><th>Revenue</th><th>Profit</th><th>Invoices</th></tr></thead>
+                            <tbody id="yearlyTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VIEW 2: SELL / POS TERMINAL WITH AUTO-SEARCH -->
+        <!-- ============================================================ -->
+        <section id="view-sell" class="tab-view">
+            <!-- Category Filter Pills for POS -->
+            <div class="category-filter-bar">
+                <button class="pos-cat-pill active" data-poscat="all" onclick="App.filterPosByCategory('all')">All Items</button>
+                <button class="pos-cat-pill" data-poscat="medicine" onclick="App.filterPosByCategory('medicine')">Medicines</button>
+                <button class="pos-cat-pill" data-poscat="baby" onclick="App.filterPosByCategory('baby')">Pampers & Baby</button>
+                <button class="pos-cat-pill" data-poscat="cosmetics" onclick="App.filterPosByCategory('cosmetics')">Face Wash, Creams & Oils</button>
+                <button class="pos-cat-pill" data-poscat="soaps" onclick="App.filterPosByCategory('soaps')">Soaps</button>
+                <button class="pos-cat-pill" data-poscat="syrup" onclick="App.filterPosByCategory('syrup')">Syrups</button>
+                <button class="pos-cat-pill" data-poscat="surgical" onclick="App.filterPosByCategory('surgical')">Surgical & FMCG</button>
+            </div>
+
+            <div class="pos-layout">
+                <!-- Add Item Form -->
+                <div class="ui-card">
+                    <div class="card-title-row">
+                        <h3 style="display:flex; align-items:center; gap:6px;">
+                            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            Quick Dispense (Auto-Search)
+                        </h3>
+                    </div>
+                    <form id="addToCartForm">
+                        <div class="form-group">
+                            <label class="form-label" style="display:flex; align-items:center; gap:5px;">
+                                <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                Instant Auto-Search (Type any letter e.g. "I")
+                            </label>
+                            <div class="search-input-wrapper">
+                                <input type="text" id="posSearchInput" class="input-field" placeholder="Type letter or name (e.g. Panadol, Pampers, Face wash)..." autocomplete="off">
+                                <!-- Floating Auto Search Suggestion Cards Box (Starts-with prioritized on TOP) -->
+                                <div id="posAutoSearchResults" class="auto-search-results-box"></div>
+                            </div>
+                            
+                            <label class="form-label" style="margin-top:8px;">Or Select from list</label>
+                            <select id="saleSelect" class="input-field" required>
+                                <option value="" disabled selected>-- Tap / Select Product --</option>
+                            </select>
+                        </div>
+
+                        <div id="selectedMedInfo" style="display:none; background:var(--primary-light); padding:10px 12px; border-radius:var(--radius-sm); margin-bottom:12px; border:1px solid var(--border-color);">
+                            <!-- Live details populated when product selected -->
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label class="form-label">Sale Unit</label>
+                                <select id="saleUnitType" class="input-field" required>
+                                    <option value="box">Box(es)</option>
+                                    <option value="strip">Strip(s)</option>
+                                    <option value="tablet">Loose Tablet(s)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" id="saleQty" class="input-field" placeholder="Qty" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label class="form-label">Price / Unit (PKR)</label>
+                                <input type="number" step="0.01" id="saleCustomPrice" class="input-field" placeholder="Auto Calculated">
+                            </div>
+                            <div style="display: flex; align-items: flex-end; margin-bottom:10px;">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    Add to Basket
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Active Basket & Checkout Summary -->
+                <div class="ui-card" id="cartSectionCard">
+                    <div class="card-title-row">
+                        <h3 style="display:flex; align-items:center; gap:6px;">
+                            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Current Basket
+                        </h3>
+                        <button class="btn btn-danger btn-sm" onclick="POSManager.clearCart()">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Empty
+                        </button>
+                    </div>
+
+                    <div class="table-container" style="max-height: 220px; margin-bottom: 12px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Unit</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartTableBody">
+                                <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:16px;">Basket is empty</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="checkoutSection" style="display:none; background:var(--bg-subtle); border:1px dashed var(--border-color); padding:14px; border-radius:var(--radius-sm);">
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label class="form-label">Patient / Customer</label>
+                                <input type="text" id="custName" class="input-field" placeholder="Walk-in Customer">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Phone</label>
+                                <input type="text" id="custPhone" class="input-field" placeholder="03XXXXXXXXX">
+                            </div>
+                        </div>
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label class="form-label">Prescribing Doctor</label>
+                                <input type="text" id="doctorName" class="input-field" placeholder="Dr. Name (Optional)">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Payment Mode</label>
+                                <select id="paymentMethod" class="input-field">
+                                    <option value="Cash">Cash</option>
+                                    <option value="Card">Card</option>
+                                    <option value="EasyPaisa/JazzCash">EasyPaisa / JazzCash</option>
+                                    <option value="Credit">Credit (Udhar)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;">
+                            <span>Subtotal:</span>
+                            <strong id="cartSubtotal">Rs. 0.00</strong>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:13px;">
+                            <span>Discount (%):</span>
+                            <input type="number" id="saleDiscount" class="input-field" value="0" min="0" max="100" style="width: 80px; min-height:36px; padding:4px 8px; text-align:right; margin-bottom:0;">
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:16px; font-weight:900; border-top:1px solid var(--border-color); padding-top:8px; margin-top:6px;">
+                            <span>Grand Total:</span>
+                            <span id="cartGrandTotal" style="color:var(--success);">Rs. 0.00</span>
+                        </div>
+
+                        <button id="checkoutBtn" class="btn btn-success btn-block" style="margin-top: 12px; font-size: 15px; padding: 12px;">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Complete Sale & Print Bill
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VIEW 3: INVENTORY STOCK MANAGEMENT (MULTI-CATEGORY) -->
+        <!-- ============================================================ -->
+        <section id="view-inventory" class="tab-view">
+            <!-- Add Stock Card -->
+            <div class="ui-card">
+                <div class="card-title-row">
+                    <h3 style="display:flex; align-items:center; gap:6px;">
+                        <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        Add / Purchase Stock
+                    </h3>
+                </div>
+                <form id="medForm">
+                    <!-- Category Selector -->
+                    <div class="form-row-2" style="margin-bottom:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Product Category *</label>
+                            <select id="medCategory" class="input-field" style="font-weight:800; color:var(--primary);" required>
+                                <option value="medicine">Medicine (Tablets / Capsules)</option>
+                                <option value="baby">Baby Care & Pampers / Diapers</option>
+                                <option value="cosmetics">Cosmetics, Face Wash, Creams & Oils</option>
+                                <option value="soaps">Soaps, Body Wash & Shampoos</option>
+                                <option value="syrup">Syrups, Drops & Suspensions</option>
+                                <option value="surgical">Surgical, Syringes & Equipment</option>
+                                <option value="general">General FMCG & Supplements</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Product Name *</label>
+                            <input type="text" id="medName" class="input-field" placeholder="e.g. Pampers Size 4 / Himalaya Face Wash" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label class="form-label">Batch / Lot #</label>
+                            <input type="text" id="medBatch" class="input-field" placeholder="e.g. BT-9921">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiry Date *</label>
+                            <input type="date" id="medExpiry" class="input-field" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Rack / Shelf Location</label>
+                            <input type="text" id="medLocation" class="input-field" placeholder="e.g. Baby Section / Rack A-1">
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC FIELDS FOR MEDICINES -->
+                    <div id="medicineFieldsGroup" class="form-row-3">
+                        <div class="form-group">
+                            <label class="form-label">Strips / Box *</label>
+                            <input type="number" id="stripsPerBox" class="input-field" min="1" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tabs / Strip *</label>
+                            <input type="number" id="tabletsPerStrip" class="input-field" min="1" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Boxes Bought *</label>
+                            <input type="number" id="medStock" class="input-field" placeholder="Quantity" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC FIELDS FOR NON-MEDICINES (PAMPERS, SOAPS, CREAMS, OILS, FACE WASH) -->
+                    <div id="generalProductFieldsGroup" class="form-row-3" style="display:none;">
+                        <div class="form-group">
+                            <label class="form-label">Single Unit Name</label>
+                            <input type="text" id="productUnitName" class="input-field" placeholder="Piece / Bottle / Diaper / Bar" value="Piece">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" id="labelPackContains">Pieces Per Pack / Carton</label>
+                            <input type="number" id="productPackContains" class="input-field" min="1" value="1">
+                            <input type="hidden" id="productPackName" value="Pack">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" id="labelGeneralStock">Packs / Quantity Bought *</label>
+                            <input type="number" id="productStockQty" class="input-field" placeholder="Packs / Pieces Quantity" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label" id="labelBuyPrice">Buy Price / Box (PKR) *</label>
+                            <input type="number" step="0.01" id="medBuying" class="input-field" placeholder="Cost price" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" id="labelSellPrice">Sell Price / Box (PKR) *</label>
+                            <input type="number" step="0.01" id="boxSellingPrice" class="input-field" placeholder="Retail price" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 4px;">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save Product to Stock
+                    </button>
+                </form>
+            </div>
+
+            <!-- Inventory Category Filter Pills -->
+            <div class="category-filter-bar">
+                <button class="cat-pill active" data-cat="all" onclick="App.filterInventoryByCategory('all')">All</button>
+                <button class="cat-pill" data-cat="medicine" onclick="App.filterInventoryByCategory('medicine')">Medicines</button>
+                <button class="cat-pill" data-cat="baby" onclick="App.filterInventoryByCategory('baby')">Pampers & Baby</button>
+                <button class="cat-pill" data-cat="cosmetics" onclick="App.filterInventoryByCategory('cosmetics')">Face Wash, Creams & Oils</button>
+                <button class="cat-pill" data-cat="soaps" onclick="App.filterInventoryByCategory('soaps')">Soaps</button>
+                <button class="cat-pill" data-cat="syrup" onclick="App.filterInventoryByCategory('syrup')">Syrups</button>
+                <button class="cat-pill" data-cat="surgical" onclick="App.filterInventoryByCategory('surgical')">Surgical</button>
+                <button class="cat-pill" data-cat="general" onclick="App.filterInventoryByCategory('general')">General</button>
+            </div>
+
+            <!-- Inventory Ledger Table -->
+            <div class="ui-card">
+                <div class="card-title-row" style="flex-wrap:wrap; gap:8px;">
+                    <h3 style="display:flex; align-items:center; gap:6px;">
+                        <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                        Inventory Ledger
+                    </h3>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <input type="text" id="searchInventory" class="input-field" placeholder="Search name, batch..." style="min-height:36px; padding:6px 10px; width:180px; margin-bottom:0;">
+                        <button class="btn btn-secondary btn-sm" onclick="InventoryManager.exportToCSV(App.getState().medicines)">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Batch</th>
+                                <th>Expiry</th>
+                                <th>Packaging</th>
+                                <th>Stock</th>
+                                <th>Buy Price</th>
+                                <th>Sell Price</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Instant Pagination Toolbar for 10,000+ Items -->
+                <div id="inventoryPagination"></div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VIEW 4: SALES LOGS & RETURNS -->
+        <!-- ============================================================ -->
+        <section id="view-history" class="tab-view">
+            <div class="ui-card">
+                <div class="card-title-row" style="flex-wrap:wrap; gap:8px;">
+                    <h3 style="display:flex; align-items:center; gap:6px;">
+                        <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Sales Logs & Returns
+                    </h3>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <select id="historyFilterRange" class="input-field" style="min-height:36px; padding:4px 8px; width:auto; margin-bottom:0;">
+                            <option value="all">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="this_month">This Month</option>
+                        </select>
+                        <input type="text" id="searchSales" class="input-field" placeholder="Search Inv #, Patient..." style="min-height:36px; padding:4px 8px; width:160px; margin-bottom:0;">
+                        <button class="btn btn-secondary btn-sm" onclick="DashboardManager.exportSalesCSV(App.getState().salesHistory)">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice #</th>
+                                <th>Date</th>
+                                <th>Patient</th>
+                                <th>Items</th>
+                                <th>Net Total</th>
+                                <th>Profit</th>
+                                <th>Pay</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- VIEW 5: SETTINGS & OFFLINE TOOLS -->
+        <!-- ============================================================ -->
+        <section id="view-settings" class="tab-view">
+            <div class="pos-layout">
+                <div class="ui-card">
+                    <div class="card-title-row">
+                        <h3 style="display:flex; align-items:center; gap:6px;">
+                            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            Pharmacy Receipt Settings
+                        </h3>
+                    </div>
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label class="form-label">Pharmacy / Store Name</label>
+                            <input type="text" id="settingPharmName" class="input-field" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Address / Location</label>
+                            <input type="text" id="settingPharmAddress" class="input-field">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" id="settingPharmPhone" class="input-field">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Receipt Notice / Policy</label>
+                            <textarea id="settingPharmNotice" class="input-field" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Master PIN Lock</label>
+                            <input type="password" id="settingMasterPin" class="input-field" placeholder="e.g. 1234">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            Save Settings
+                        </button>
+                    </form>
+                </div>
+
+                <div class="ui-card">
+                    <div class="card-title-row">
+                        <h3 style="display:flex; align-items:center; gap:6px;">
+                            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                            Offline Database Control
+                        </h3>
+                    </div>
+                    <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px; line-height:1.5;">
+                        Your store records are stored safely in <strong>Offline IndexedDB</strong>. You can generate 10,000 test products, export backups, or transfer to another computer or phone.
+                    </p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <button class="btn btn-primary btn-block" id="gen10kBtn" style="background:#4338ca;" onclick="App.load10000SampleData()">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            Load 10,000 Sample Products Database
+                        </button>
+                        <button class="btn btn-success btn-block" onclick="App.backupDatabase()">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                            Download Database Backup (.JSON)
+                        </button>
+                        <button class="btn btn-secondary btn-block" onclick="document.getElementById('dbRestoreInput').click()">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                            Restore Database from JSON
+                        </button>
+                        <button class="btn btn-danger btn-block" onclick="App.wipeAllData()">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            Factory Reset (Wipe All Data)
+                        </button>
+                    </div>
+
+                    <div style="margin-top:20px; padding:12px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border-color); text-align:center; font-size:11px;">
+                        <p style="margin:2px 0;">Developer: <strong>Muheeb Kakar</strong></p>
+                        <p style="margin:2px 0;">Mobile: <strong>03166829982</strong></p>
+                        <p style="margin:2px 0; color:var(--primary); font-weight:800;">Pharmacy POS Version 3.0 (Luxury Theme Edition)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- MOBILE FLOATING CART BAR (Tapping navigates to Basket) -->
+    <!-- ============================================================ -->
+    <div class="mobile-cart-float-bar" id="mobileCartFloatBar" onclick="App.navigateTo('sell')">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span id="mobileCartCount" style="font-weight:700; font-size:13px;">0 items</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span id="mobileCartTotal" style="font-weight:900; font-size:14px; color:var(--success);">Rs. 0.00</span>
+            <span style="font-size:12px; opacity:0.8;">View Basket →</span>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MOBILE BOTTOM APP NAVIGATION BAR (Premium Vector SVGs) -->
+    <!-- ============================================================ -->
+    <nav class="bottom-nav-bar">
+        <button class="nav-item active" data-tab="dashboard">
+            <span class="nav-icon">
+                <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+            </span>
+            <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-tab="sell">
+            <span class="nav-icon">
+                <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"/>
+                    <circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+            </span>
+            <span>Sell POS</span>
+        </button>
+        <button class="nav-item" data-tab="inventory">
+            <span class="nav-icon">
+                <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+            </span>
+            <span>Stock</span>
+        </button>
+        <button class="nav-item" data-tab="history">
+            <span class="nav-icon">
+                <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+            </span>
+            <span>History</span>
+        </button>
+        <button class="nav-item" data-tab="settings">
+            <span class="nav-icon">
+                <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <!-- ============================================================ -->
+    <!-- MODAL: EDIT PRODUCT INVENTORY -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay" id="editMedModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="display:flex; align-items:center; gap:6px;">
+                    <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Edit Product Details
+                </h3>
+                <button class="modal-close-btn" onclick="App.closeEditModal()">✕</button>
+            </div>
+            <form id="editMedForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editMedId">
+                    
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Category</label>
+                            <select id="editMedCategory" class="input-field" required>
+                                <option value="medicine">Medicine</option>
+                                <option value="baby">Baby & Pampers</option>
+                                <option value="cosmetics">Cosmetics & Creams</option>
+                                <option value="soaps">Soaps</option>
+                                <option value="syrup">Syrups</option>
+                                <option value="surgical">Surgical</option>
+                                <option value="general">General</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Product Name</label>
+                            <input type="text" id="editMedName" class="input-field" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Batch / Lot #</label>
+                            <input type="text" id="editMedBatch" class="input-field">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="date" id="editMedExpiry" class="input-field" required>
+                        </div>
+                    </div>
+
+                    <!-- Medicine Specific Fields in Edit -->
+                    <div id="editMedicineSpecifics" class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Strips / Box</label>
+                            <input type="number" id="editStripsPerBox" class="input-field" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tabs / Strip</label>
+                            <input type="number" id="editTabletsPerStrip" class="input-field" min="1">
+                        </div>
+                    </div>
+
+                    <!-- General Specific Fields in Edit -->
+                    <div id="editGeneralSpecifics" class="form-row-2" style="display:none;">
+                        <div class="form-group">
+                            <label class="form-label">Unit Name</label>
+                            <input type="text" id="editUnitName" class="input-field" placeholder="Piece / Bottle / Bar">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Units / Pack</label>
+                            <input type="number" id="editPackContains" class="input-field" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Total Loose Units in Stock</label>
+                            <input type="number" id="editTotalUnits" class="input-field" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Rack / Location</label>
+                            <input type="text" id="editMedLocation" class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">Buy Price (PKR)</label>
+                            <input type="number" step="0.01" id="editBuyPrice" class="input-field" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sell Price (PKR)</label>
+                            <input type="number" step="0.01" id="editSellPrice" class="input-field" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" style="flex:1;" onclick="App.closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex:1;">Update Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL: PRINTABLE RECEIPT / THERMAL BILL -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay" id="invoiceModal">
+        <div class="modal-content" style="max-width:420px;">
+            <div class="modal-body" id="invoicePrintView">
+                <div class="receipt-wrapper">
+                    <div class="receipt-header">
+                        <h2 id="invShopName">AHSAN PHARMACY</h2>
+                        <p id="invShopAddress">Medical Complex Sayrab Rode Quetta, Pakistan</p>
+                        <p id="invShopPhone">Ph: 03166829982</p>
+                    </div>
+
+                    <div class="receipt-meta-grid">
+                        <span><strong>Inv:</strong> <span id="invIdField">#0000</span></span>
+                        <span><strong>Date:</strong> <span id="invDateField">--/--/----</span></span>
+                    </div>
+                    <div class="receipt-meta-grid">
+                        <span><strong>Patient:</strong> <span id="invCustomerName">Walk-in</span></span>
+                        <span><strong>Ph:</strong> <span id="invCustomerPhone">N/A</span></span>
+                    </div>
+                    <div class="receipt-meta-grid" id="invDoctorRow" style="display:none;">
+                        <span><strong>Doctor:</strong> <span id="invDoctorName">N/A</span></span>
+                        <span><strong>Pay:</strong> <span id="invPayMode">Cash</span></span>
+                    </div>
+
+                    <table class="receipt-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">Item</th>
+                                <th style="text-align: center;">Qty</th>
+                                <th style="text-align: right;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invItemsBody"></tbody>
+                    </table>
+
+                    <div class="receipt-summary">
+                        <div class="receipt-summary-row">
+                            <span>Subtotal:</span>
+                            <span id="invSubtotal">Rs. 0.00</span>
+                        </div>
+                        <div class="receipt-summary-row" style="font-size:11px; color:#444;">
+                            <span>Discount (<span id="invDiscPercent">0</span>%):</span>
+                            <span>- <span id="invDiscAmount">Rs. 0.00</span></span>
+                        </div>
+                        <div class="receipt-summary-row receipt-grand-total">
+                            <span>Net Payable:</span>
+                            <span id="invGrandTotal">Rs. 0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="receipt-footer">
+                        <p id="invNoticeField" style="margin:2px 0;">Medicines sold cannot be returned without original Rx.</p>
+                        <p style="margin:4px 0 0 0; font-weight: bold;">Made by Muheeb Kakar (03166829982)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer no-print">
+                <button type="button" class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('invoiceModal').classList.remove('active')">Close</button>
+                <button type="button" class="btn btn-primary" style="flex:1; background:#0f172a;" onclick="window.print()">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL: PIN LOCK SCREEN -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay" id="lockModal">
+        <div class="modal-content" style="max-width:320px; text-align:center;">
+            <div class="modal-header" style="justify-content:center;">
+                <h3 style="display:flex; align-items:center; gap:6px;">
+                    <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    POS Locked
+                </h3>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Enter master PIN to unlock:</p>
+                <input type="password" id="unlockPinInput" class="input-field" placeholder="Enter PIN" style="font-size:22px; letter-spacing:6px; text-align:center;">
+                <button class="btn btn-primary btn-block" style="margin-top:12px;" onclick="SettingsManager.unlock(App.getState().settings.masterPin)">Unlock System</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Structured App Scripts -->
+    <script src="js/db.js"></script>
+    <script src="js/generator.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/pos.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

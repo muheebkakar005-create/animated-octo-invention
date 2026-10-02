@@ -1,0 +1,11 @@
+# Build outputs & JDK
+android-app/jdk17/
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+.gradle/
+build/
+local.properties
+*.log
+.DS_Store
+Thumbs.db
